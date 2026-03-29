@@ -42,12 +42,19 @@ model Receipt {
 
   conversionRate Decimal
 
+  category    String
+  description String
+  expenseDate DateTime
+  receiptUrl  String?
+
   createdById String
   createdBy   User   @relation("CreatedReceipts", fields: [createdById], references: [id])
 
   approvals Approval[]
   company   Company?   @relation(fields: [companyId], references: [id])
   companyId String?
+
+  createdAt DateTime @default(now())
 }
 
 model Company {
