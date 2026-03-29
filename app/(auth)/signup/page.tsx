@@ -18,6 +18,7 @@ const signupSchema = z
     email: z.email('Invalid email address'),
     password: z.string().min(8, 'Password must be at least 8 characters'),
     confirmPassword: z.string(),
+    company: z.string().min(1, 'Company name is required'),
     country: z.string().min(1, 'Country is required'),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -31,12 +32,19 @@ interface Country {
   name: {
     common: string;
   };
+  currencies?: {
+    [key: string]: {
+      name: string;
+      symbol: string;
+    };
+  };
 }
 
 export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [countries, setCountries] = useState<string[]>([]);
+  const [countries, setCountries] = useState<Country[]>([]);
   const [countriesLoading, setCountriesLoading] = useState(true);
+  const [selectedCurrency, setSelectedCurrency] = useState<string>('');
   const {
     register,
     handleSubmit,
@@ -50,13 +58,13 @@ export default function SignupPage() {
     const fetchCountries = async () => {
       try {
         const response = await fetch(
-          'https://restcountries.com/v3.1/all?fields=name'
+          'https://restcountries.com/v3.1/all?fields=name,currencies'
         );
         const data: Country[] = await response.json();
-        const countryNames = data
-          .map((country) => country.name.common)
-          .sort();
-        setCountries(countryNames);
+        const sortedCountries = data.sort((a, b) =>
+          a.name.common.localeCompare(b.name.common)
+        );
+        setCountries(sortedCountries);
       } catch (error) {
         console.error('Failed to fetch countries:', error);
         setCountries([]);
@@ -68,10 +76,29 @@ export default function SignupPage() {
     fetchCountries();
   }, []);
 
+  const handleCountryChange = (countryName: string) => {
+    const selectedCountry = countries.find(
+      (c) => c.name.common === countryName
+    );
+    
+    if (selectedCountry && selectedCountry.currencies) {
+      // Get the first currency code and name from the country
+      const currencyCode = Object.keys(selectedCountry.currencies)[0];
+      const currency = selectedCountry.currencies[currencyCode];
+      setSelectedCurrency(`${currencyCode} (${currency.symbol})`);
+    } else {
+      setSelectedCurrency('');
+    }
+  };
+
   const onSubmit = async (data: SignupFormData) => {
     setIsLoading(true);
     try {
-      console.log('Sign up form data:', data);
+      const formDataWithCurrency = {
+        ...data,
+        currency: selectedCurrency,
+      };
+      console.log('Sign up form data:', formDataWithCurrency);
       // Logic to be added
     } catch (error) {
       console.error(error);
@@ -170,6 +197,25 @@ export default function SignupPage() {
           </div>
 
           <div>
+            <label
+              htmlFor="company"
+              className="block text-sm font-medium text-neutral-700 mb-2"
+            >
+              Company Name
+            </label>
+            <input
+              {...register('company')}
+              id="company"
+              type="text"
+              placeholder="Your company name"
+              className="w-full px-4 py-2.5 bg-white border border-neutral-300 rounded-lg text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-400 focus:ring-2 focus:ring-neutral-100 transition"
+            />
+            {errors.company && (
+              <p className="text-red-600 text-sm mt-1">{errors.company.message}</p>
+            )}
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-neutral-700 mb-2">
               Country selection
             </label>
@@ -177,7 +223,14 @@ export default function SignupPage() {
               name="country"
               control={control}
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange} disabled={countriesLoading}>
+                <Select
+                  value={field.value}
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    handleCountryChange(value);
+                  }}
+                  disabled={countriesLoading}
+                >
                   <SelectTrigger className="w-full bg-white border border-neutral-300 rounded-lg text-neutral-900 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-100">
                     <SelectValue
                       placeholder={
@@ -187,8 +240,8 @@ export default function SignupPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {countries.map((country) => (
-                      <SelectItem key={country} value={country}>
-                        {country}
+                      <SelectItem key={country.name.common} value={country.name.common}>
+                        {country.name.common}
                       </SelectItem>
                     ))}
                   </SelectContent>

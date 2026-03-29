@@ -8,57 +8,73 @@ datasource db {
 }
 
 model User {
-  id       String  @id @default(uuid())
-  email    String  @unique
+  id       String @id @default(uuid())
+  email    String @unique
   password String
   name     String
 
   role      Role
-  managerId String? @unique
+  managerId String?
   manager   User?   @relation("UserManager", fields: [managerId], references: [id])
   employees User[]  @relation("UserManager")
 
   receipts Receipt[] @relation("CreatedReceipts")
 
   approvals Approval[] @relation("UserApprovals")
-  company Company?
+  companyId String?
+  company   Company?   @relation("CompanyUsers", fields: [companyId], references: [id])
+  adminOf Company? @relation("CompanyAdmin")
 
-  createdAt DateTime  @default(now())
+  createdAt DateTime @default(now())
 }
 
 model Receipt {
-  id          String     @id @default(uuid())
-  amount      BigInt
+  id String @id @default(uuid())
+
+  amountOriginal   Decimal
+  currencyOriginal String
+
+  amountConverted Decimal
+  currencyCompany String
+
+  conversionRate Decimal
+
   createdById String
-  createdBy User @relation("CreatedReceipts", fields: [createdById], references: [id])
-  approvals   Approval[]
+  createdBy   User   @relation("CreatedReceipts", fields: [createdById], references: [id])
+
+  approvals Approval[]
+  company   Company?   @relation(fields: [companyId], references: [id])
+  companyId String?
 }
 
 model Company {
   id String @id @default(uuid())
 
-  name String
+  name     String
   currency String
-  country String
-  userId String @unique
-  user   User @relation(fields: [userId], references: [id])
+  country  String
+  adminId  String @unique
+  admin    User   @relation("CompanyAdmin", fields: [adminId], references: [id])
+
+  users    User[]    @relation("CompanyUsers")
+  receipts Receipt[]
 }
 
 model Approval {
   id String @id @default(uuid())
 
   receiptId String
-  receipt Receipt @relation(fields: [receiptId], references: [id])
+  receipt   Receipt @relation(fields: [receiptId], references: [id])
 
   approverId String
-  approver User @relation("UserApprovals", fields: [approverId], references: [id])
+  approver   User   @relation("UserApprovals", fields: [approverId], references: [id])
 
   status ApprovalStatus @default(PENDING)
 
   order Int // for approval flow (Manager → Finance → Director)
 
   approvedAt DateTime?
-  createdAt DateTime @default(now())
+  createdAt  DateTime  @default(now())
 }
 
 model OTP {
