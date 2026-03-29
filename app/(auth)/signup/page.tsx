@@ -32,12 +32,19 @@ interface Country {
   name: {
     common: string;
   };
+  currencies?: {
+    [key: string]: {
+      name: string;
+      symbol: string;
+    };
+  };
 }
 
 export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [countries, setCountries] = useState<string[]>([]);
+  const [countries, setCountries] = useState<Country[]>([]);
   const [countriesLoading, setCountriesLoading] = useState(true);
+  const [selectedCurrency, setSelectedCurrency] = useState<string>('');
   const {
     register,
     handleSubmit,
@@ -51,13 +58,13 @@ export default function SignupPage() {
     const fetchCountries = async () => {
       try {
         const response = await fetch(
-          'https://restcountries.com/v3.1/all?fields=name'
+          'https://restcountries.com/v3.1/all?fields=name,currencies'
         );
         const data: Country[] = await response.json();
-        const countryNames = data
-          .map((country) => country.name.common)
-          .sort();
-        setCountries(countryNames);
+        const sortedCountries = data.sort((a, b) =>
+          a.name.common.localeCompare(b.name.common)
+        );
+        setCountries(sortedCountries);
       } catch (error) {
         console.error('Failed to fetch countries:', error);
         setCountries([]);
@@ -69,10 +76,29 @@ export default function SignupPage() {
     fetchCountries();
   }, []);
 
+  const handleCountryChange = (countryName: string) => {
+    const selectedCountry = countries.find(
+      (c) => c.name.common === countryName
+    );
+    
+    if (selectedCountry && selectedCountry.currencies) {
+      // Get the first currency code and name from the country
+      const currencyCode = Object.keys(selectedCountry.currencies)[0];
+      const currency = selectedCountry.currencies[currencyCode];
+      setSelectedCurrency(`${currencyCode} (${currency.symbol})`);
+    } else {
+      setSelectedCurrency('');
+    }
+  };
+
   const onSubmit = async (data: SignupFormData) => {
     setIsLoading(true);
     try {
-      console.log('Sign up form data:', data);
+      const formDataWithCurrency = {
+        ...data,
+        currency: selectedCurrency,
+      };
+      console.log('Sign up form data:', formDataWithCurrency);
       // Logic to be added
     } catch (error) {
       console.error(error);
@@ -197,7 +223,14 @@ export default function SignupPage() {
               name="country"
               control={control}
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange} disabled={countriesLoading}>
+                <Select
+                  value={field.value}
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    handleCountryChange(value);
+                  }}
+                  disabled={countriesLoading}
+                >
                   <SelectTrigger className="w-full bg-white border border-neutral-300 rounded-lg text-neutral-900 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-100">
                     <SelectValue
                       placeholder={
@@ -207,8 +240,8 @@ export default function SignupPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {countries.map((country) => (
-                      <SelectItem key={country} value={country}>
-                        {country}
+                      <SelectItem key={country.name.common} value={country.name.common}>
+                        {country.name.common}
                       </SelectItem>
                     ))}
                   </SelectContent>
