@@ -1,23 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState, useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-
-const COUNTRIES = [
-  'United States',
-  'Canada',
-  'United Kingdom',
-  'Australia',
-  'Germany',
-  'France',
-  'India',
-  'Japan',
-  'Mexico',
-  'Brazil',
-  'Other',
-];
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const signupSchema = z
   .object({
@@ -34,15 +27,46 @@ const signupSchema = z
 
 type SignupFormData = z.infer<typeof signupSchema>;
 
+interface Country {
+  name: {
+    common: string;
+  };
+}
+
 export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [countries, setCountries] = useState<string[]>([]);
+  const [countriesLoading, setCountriesLoading] = useState(true);
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
   });
+
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        const response = await fetch(
+          'https://restcountries.com/v3.1/all?fields=name'
+        );
+        const data: Country[] = await response.json();
+        const countryNames = data
+          .map((country) => country.name.common)
+          .sort();
+        setCountries(countryNames);
+      } catch (error) {
+        console.error('Failed to fetch countries:', error);
+        setCountries([]);
+      } finally {
+        setCountriesLoading(false);
+      }
+    };
+
+    fetchCountries();
+  }, []);
 
   const onSubmit = async (data: SignupFormData) => {
     setIsLoading(true);
@@ -146,24 +170,31 @@ export default function SignupPage() {
           </div>
 
           <div>
-            <label
-              htmlFor="country"
-              className="block text-sm font-medium text-neutral-700 mb-2"
-            >
+            <label className="block text-sm font-medium text-neutral-700 mb-2">
               Country selection
             </label>
-            <select
-              {...register('country')}
-              id="country"
-              className="w-full px-4 py-2.5 bg-white border border-neutral-300 rounded-lg text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-400 focus:ring-2 focus:ring-neutral-100 transition appearance-none cursor-pointer"
-            >
-              <option value="">Select a country</option>
-              {COUNTRIES.map((country) => (
-                <option key={country} value={country}>
-                  {country}
-                </option>
-              ))}
-            </select>
+            <Controller
+              name="country"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange} disabled={countriesLoading}>
+                  <SelectTrigger className="w-full bg-white border border-neutral-300 rounded-lg text-neutral-900 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-100">
+                    <SelectValue
+                      placeholder={
+                        countriesLoading ? 'Loading countries...' : 'Select a country'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {countries.map((country) => (
+                      <SelectItem key={country} value={country}>
+                        {country}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.country && (
               <p className="text-red-600 text-sm mt-1">{errors.country.message}</p>
             )}
