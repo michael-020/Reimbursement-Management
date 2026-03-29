@@ -3,29 +3,123 @@
 import { Card, PageHeader } from "@/components/ui/card";
 import { ArrowLeft, UserPlus } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { axiosInstance } from "@/lib/axios";
+import { AxiosError } from "axios";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
-interface User {
+interface Manager {
   id: string;
   name: string;
-  role: "admin" | "manager" | "employee" | "finance" | "director";
+  email: string;
+  role: string;
+  createdAt: string;
 }
 
-const users: User[] = [
-  { id: "user-001", name: "Morgan Lee", role: "manager" },
-  { id: "user-002", name: "Sam Wilson", role: "manager" },
-  { id: "user-003", name: "Alex Carter", role: "manager" },
-  { id: "user-004", name: "Taylor Chen", role: "admin" },
-  { id: "user-005", name: "Jordan Blake", role: "employee" },
-  { id: "user-006", name: "Casey Thompson", role: "finance" },
-  { id: "user-007", name: "Riley Davis", role: "director" },
-];
-
-const filteredManagers = users.filter((user) => user.role === "manager");
-const roles = ["Employee", "Manager", "Admin", "Finance", "Director"];
+const roles = ["Employee", "Manager", "Finance", "Director"];
 
 export default function CreateUserPage() {
+  const router = useRouter();
+  const [managers, setManagers] = useState<Manager[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingManagers, setIsFetchingManagers] = useState(true);
   const [selectedRole, setSelectedRole] = useState<string>("");
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    role: "",
+    managerId: "",
+  });
+
+  useEffect(() => {
+    const fetchManagers = async () => {
+      try {
+        const response = await axiosInstance.get("/admin/managers");
+        setManagers(response.data.managers);
+      } catch (error) {
+        console.error("Error fetching managers:", error);
+        let errorMessage = "Failed to fetch managers";
+        if (error instanceof AxiosError && error.response?.data?.msg) {
+          errorMessage = error.response.data.msg as string;
+        }
+        toast.error(errorMessage);
+      } finally {
+        setIsFetchingManagers(false);
+      }
+    };
+
+    fetchManagers();
+  }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === "role") {
+      setSelectedRole(value);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validation
+    if (!formData.name.trim()) {
+      toast.error("Name is required");
+      return;
+    }
+
+    if (!formData.email.trim()) {
+      toast.error("Email is required");
+      return;
+    }
+
+    if (!formData.password) {
+      toast.error("Password is required");
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      toast.error("Password must be at least 8 characters");
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    if (!formData.role) {
+      toast.error("Role is required");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role.toUpperCase(),
+        managerId: formData.managerId || undefined,
+      };
+
+      await axiosInstance.post("/add-users", payload);
+      toast.success("User created successfully");
+      router.push("/admin/users");
+    } catch (error) {
+      console.error("Error creating user:", error);
+      let errorMessage = "Failed to create user";
+      if (error instanceof AxiosError && error.response?.data?.msg) {
+        errorMessage = error.response.data.msg as string;
+      }
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
     <div>
       <div className="mb-6">
@@ -54,13 +148,16 @@ export default function CreateUserPage() {
             </div>
           </div>
 
-          <div className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
                 Name <span className="text-red-400">*</span>
               </label>
               <input
                 type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
                 placeholder="Jordan Smith"
                 className="w-full text-sm border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all placeholder-slate-300 text-slate-800"
               />
@@ -72,6 +169,9 @@ export default function CreateUserPage() {
               </label>
               <input
                 type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
                 placeholder="jordan@company.com"
                 className="w-full text-sm border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all placeholder-slate-300 text-slate-800"
               />
@@ -80,11 +180,41 @@ export default function CreateUserPage() {
             <div className="grid grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Password <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  placeholder="At least 8 characters"
+                  className="w-full text-sm border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all placeholder-slate-300 text-slate-800"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Confirm Password <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  placeholder="Confirm password"
+                  className="w-full text-sm border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all placeholder-slate-300 text-slate-800"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-5">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
                   Role <span className="text-red-400">*</span>
                 </label>
                 <select
+                  name="role"
                   value={selectedRole}
-                  onChange={(e) => setSelectedRole(e.target.value)}
+                  onChange={handleInputChange}
                   className="w-full text-sm border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all text-slate-700 bg-white cursor-pointer"
                 >
                   <option value="">Select a role...</option>
@@ -95,24 +225,21 @@ export default function CreateUserPage() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Reporting Manager
+                  Reporting Manager {selectedRole !== "admin" && <span className="text-red-400">*</span>}
                 </label>
                 <select
-                  disabled={selectedRole === "admin"}
+                  name="managerId"
+                  value={formData.managerId}
+                  onChange={handleInputChange}
+                  disabled={selectedRole === "admin" || isFetchingManagers}
                   className="w-full text-sm border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all text-slate-700 bg-white cursor-pointer disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed"
                 >
                   <option value="">Select manager...</option>
-                  {filteredManagers.map((manager) => (
+                  {managers.map((manager) => (
                     <option key={manager.id} value={manager.id}>{manager.name}</option>
                   ))}
                 </select>
               </div>
-            </div>
-
-            <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
-              <p className="text-xs text-amber-700">
-                <span className="font-semibold">Note:</span> An invitation email will be sent to the user to set up their password.
-              </p>
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-2">
@@ -122,12 +249,16 @@ export default function CreateUserPage() {
               >
                 Cancel
               </Link>
-              <button className="text-sm px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold transition-colors shadow-sm shadow-amber-200 flex items-center gap-2">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="text-sm px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold transition-colors shadow-sm shadow-amber-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <UserPlus size={15} />
-                Create User
+                {isLoading ? "Creating..." : "Create User"}
               </button>
             </div>
-          </div>
+          </form>
         </Card>
       </div>
     </div>
