@@ -63,7 +63,6 @@ export function useExpenses({ autoFetch = false }: UseExpensesOptions = {}) {
       setLoading(true);
       setError(null);
 
-      // Use different endpoints based on user role
       let endpoint;
       if (authUser?.role === 'ADMIN') {
         endpoint = '/admin/expenses';
@@ -113,8 +112,8 @@ export function useExpenses({ autoFetch = false }: UseExpensesOptions = {}) {
       // Extract actual expense ID from formatted ID if needed (e.g., EXP-123456 -> 123456)
       const cleanId = expenseId.replace(/^EXP-/, '');
       
-      await axiosInstance.post(`/api/approvals/${cleanId}`, { 
-        action: status.toLowerCase(), 
+      await axiosInstance.post(`/expenses/${cleanId}/approve`, { 
+        status: status, 
         comment 
       });
       

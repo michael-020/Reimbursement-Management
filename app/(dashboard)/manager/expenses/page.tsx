@@ -21,7 +21,7 @@ const statusColors = {
 };
 
 export default function ManagerExpensesPage() {
-  const { expenses, loading, error, fetchExpenses } = useExpenses({ autoFetch: true });
+  const { expenses, loading, error, fetchExpenses, updateExpenseStatus } = useExpenses({ autoFetch: true });
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
@@ -48,14 +48,11 @@ export default function ManagerExpensesPage() {
   const pending = filteredExpenses.filter((e) => e.status === "pending").length;
   const approved = filteredExpenses.filter((e) => e.status === "approved").length;
 
-  const handleStatusUpdate = async (expenseId: string, newStatus: 'approved' | 'rejected') => {
-    try {
-      // This would be an API call in a real application
-      console.log(`Updating expense ${expenseId} to ${newStatus}`);
-      // await updateExpenseStatus(expenseId, newStatus);
-      fetchExpenses(); // Refresh the list
-    } catch (error) {
-      console.error("Error updating expense status:", error);
+  const handleStatusUpdate = async (expenseId: string, status: 'APPROVED' | 'REJECTED') => {
+    const success = await updateExpenseStatus(expenseId, status);
+    if (success) {
+      // Refresh expenses to get updated data
+      await fetchExpenses();
     }
   };
 
@@ -176,16 +173,16 @@ export default function ManagerExpensesPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        {exp.status === 'pending' && (
+                        {exp.status === 'pending' && exp.canApprove && (
                           <>
                             <button
-                              onClick={() => handleStatusUpdate(exp.id, 'approved')}
+                              onClick={() => handleStatusUpdate(exp.id, 'APPROVED')}
                               className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-xs px-2 py-1.5 rounded-lg transition-colors"
                             >
                               Approve
                             </button>
                             <button
-                              onClick={() => handleStatusUpdate(exp.id, 'rejected')}
+                              onClick={() => handleStatusUpdate(exp.id, 'REJECTED')}
                               className="bg-red-50 hover:bg-red-100 text-red-700 font-semibold text-xs px-2 py-1.5 rounded-lg transition-colors"
                             >
                               Reject

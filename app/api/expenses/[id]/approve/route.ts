@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate user
@@ -27,7 +27,7 @@ export async function POST(
 
     // Check if user can approve this expense
     const expense = await prisma.receipt.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
       include: {
         createdBy: {
           select: {
@@ -75,7 +75,7 @@ export async function POST(
 
     const approval = await prisma.approval.create({
       data: {
-        receiptId: params.id,
+        receiptId: (await params).id,
         approverId: authUser.id,
         status: status,
         order: 1,

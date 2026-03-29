@@ -153,7 +153,7 @@ export async function GET() {
       company: expense.company,
       canApprove: authUser.role === 'MANAGER' && 
         expense.approvals.length === 0 && 
-        expense.createdBy.managerId === authUser.id
+        expense.createdBy.role === 'EMPLOYEE'
     }));
 
     return NextResponse.json({
@@ -271,6 +271,35 @@ export async function POST(request: NextRequest) {
         }
       }
     });
+
+    // Create approval entries for all managers in the company
+    if (user.company) {
+      const managers = await prisma.user.findMany({
+        where: {
+          companyId: user.companyId,
+          role: 'MANAGER'
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        }
+      });
+
+      // Create approval records for each manager
+      const approvalPromises = managers.map(manager =>
+        prisma.approval.create({
+          data: {
+            receiptId: expense.id,
+            approverId: manager.id,
+            status: 'PENDING',
+            order: 1,
+          }
+        })
+      );
+
+      await Promise.all(approvalPromises);
+    }
 
     // Format response
     const formattedExpense = {
