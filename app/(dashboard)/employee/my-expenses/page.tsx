@@ -1,15 +1,9 @@
+"use client";
+
 import { Card, PageHeader, Badge } from "@/components/ui/card";
 import { PlusCircle, FileText } from "lucide-react";
 import Link from "next/link";
-
-const myExpenses = [
-  { id: "EXP-014", category: "Travel", amount: "$1,240", date: "Mar 28, 2025", status: "pending" as const, description: "Flight to NYC client meeting" },
-  { id: "EXP-013", category: "Software", amount: "$99", date: "Mar 22, 2025", status: "approved" as const, description: "Figma subscription renewal" },
-  { id: "EXP-012", category: "Meals", amount: "$380", date: "Mar 20, 2025", status: "approved" as const, description: "Team lunch - quarterly review" },
-  { id: "EXP-011", category: "Equipment", amount: "$560", date: "Mar 15, 2025", status: "rejected" as const, description: "External monitor purchase" },
-  { id: "EXP-010", category: "Training", amount: "$890", date: "Mar 10, 2025", status: "approved" as const, description: "AWS certification course" },
-  { id: "EXP-009", category: "Travel", amount: "$2,100", date: "Feb 28, 2025", status: "pending" as const, description: "Hotel stay for conference" },
-];
+import { useExpenses } from "@/lib/hooks/useExpenses";
 
 const categoryColors: Record<string, string> = {
   Travel: "bg-sky-50 text-sky-700",
@@ -21,8 +15,30 @@ const categoryColors: Record<string, string> = {
 };
 
 export default function MyExpensesPage() {
-  const total = myExpenses.reduce((acc, e) => acc + parseFloat(e.amount.replace("$", "").replace(",", "")), 0);
-  const approved = myExpenses.filter((e) => e.status === "approved").reduce((acc, e) => acc + parseFloat(e.amount.replace("$", "").replace(",", "")), 0);
+  const { expenses, loading, error, fetchExpenses } = useExpenses({ autoFetch: true });
+
+  // Fallback to mock data if API fails
+  const mockExpenses = [
+    { id: "EXP-014", category: "Travel", amount: "$1,240", date: "Mar 28, 2025", status: "pending" as const, description: "Flight to NYC client meeting" },
+    { id: "EXP-013", category: "Software", amount: "$99", date: "Mar 22, 2025", status: "approved" as const, description: "Figma subscription renewal" },
+    { id: "EXP-012", category: "Meals", amount: "$380", date: "Mar 20, 2025", status: "approved" as const, description: "Team lunch - quarterly review" },
+    { id: "EXP-011", category: "Equipment", amount: "$560", date: "Mar 15, 2025", status: "rejected" as const, description: "External monitor purchase" },
+    { id: "EXP-010", category: "Training", amount: "$890", date: "Mar 10, 2025", status: "approved" as const, description: "AWS certification course" },
+    { id: "EXP-009", category: "Travel", amount: "$2,100", date: "Feb 28, 2025", status: "pending" as const, description: "Hotel stay for conference" },
+  ];
+
+  const displayExpenses = error ? mockExpenses : expenses;
+
+  const total = displayExpenses.reduce((acc, e) => acc + parseFloat(e.amount.replace("$", "").replace(",", "")), 0);
+  const approved = displayExpenses.filter((e) => e.status === "approved").reduce((acc, e) => acc + parseFloat(e.amount.replace("$", "").replace(",", "")), 0);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-slate-500">Loading expenses...</div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -41,7 +57,7 @@ export default function MyExpensesPage() {
         {[
           { label: "Total Submitted", value: `$${total.toLocaleString()}`, color: "text-slate-900" },
           { label: "Total Approved", value: `$${approved.toLocaleString()}`, color: "text-emerald-600" },
-          { label: "Pending Review", value: myExpenses.filter((e) => e.status === "pending").length.toString(), color: "text-amber-600" },
+          { label: "Pending Review", value: displayExpenses.filter((e) => e.status === "pending").length.toString(), color: "text-amber-600" },
         ].map((s) => (
           <Card key={s.label} className="px-5 py-4 flex items-center justify-between">
             <span className="text-sm text-slate-500">{s.label}</span>
@@ -61,7 +77,7 @@ export default function MyExpensesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {myExpenses.map((exp) => (
+              {displayExpenses.map((exp) => (
                 <tr key={exp.id} className="hover:bg-slate-50 transition-colors group">
                   <td className="px-6 py-4 text-sm font-mono font-semibold text-slate-500">{exp.id}</td>
                   <td className="px-6 py-4">

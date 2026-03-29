@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Card, PageHeader, Badge } from "@/components/ui/card";
 import { CheckCircle2, XCircle, MessageSquare, ChevronDown, ChevronUp, FileText } from "lucide-react";
+import { useExpenses } from "@/lib/hooks/useExpenses";
 
 interface Expense {
   id: string;
@@ -14,13 +15,6 @@ interface Expense {
   status: "pending" | "approved" | "rejected";
 }
 
-const initialExpenses: Expense[] = [
-  { id: "EXP-018", employee: "Jordan Smith", amount: "$1,240", category: "Travel", date: "Mar 28, 2025", description: "Flight and hotel for NYC client meeting (March 28-30)", status: "pending" },
-  { id: "EXP-017", employee: "Casey Brown", amount: "$890", category: "Training", date: "Mar 26, 2025", description: "AWS Solutions Architect certification exam and study materials", status: "pending" },
-  { id: "EXP-016", employee: "Taylor Davis", amount: "$145", category: "Office Supplies", date: "Mar 25, 2025", description: "Ergonomic mouse, USB hub, and desk organiser", status: "pending" },
-  { id: "EXP-015", employee: "Riley Johnson", amount: "$2,300", category: "Equipment", date: "Mar 22, 2025", description: "Replacement laptop (old one damaged)", status: "pending" },
-];
-
 const categoryColors: Record<string, string> = {
   Travel: "bg-sky-50 text-sky-700",
   Meals: "bg-orange-50 text-orange-700",
@@ -31,18 +25,46 @@ const categoryColors: Record<string, string> = {
 };
 
 export default function ApprovalsPage() {
-  const [expenses, setExpenses] = useState(initialExpenses);
   const [comments, setComments] = useState<Record<string, string>>({});
   const [expanded, setExpanded] = useState<string | null>(null);
+  const { expenses, loading, error, updateExpenseStatus, refetch } = useExpenses({ autoFetch: true });
 
-  const handleAction = (id: string, action: "approved" | "rejected") => {
-    setExpenses((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, status: action } : e))
-    );
+  // Fallback to mock data if API fails
+  const mockExpenses: Expense[] = [
+    { id: "EXP-018", employee: "Jordan Smith", amount: "$1,240", category: "Travel", date: "Mar 28, 2025", description: "Flight and hotel for NYC client meeting (March 28-30)", status: "pending" },
+    { id: "EXP-017", employee: "Casey Brown", amount: "$890", category: "Training", date: "Mar 26, 2025", description: "AWS Solutions Architect certification exam and study materials", status: "pending" },
+    { id: "EXP-016", employee: "Taylor Davis", amount: "$145", category: "Office Supplies", date: "Mar 25, 2025", description: "Ergonomic mouse, USB hub, and desk organiser", status: "pending" },
+    { id: "EXP-015", employee: "Riley Johnson", amount: "$2,300", category: "Equipment", date: "Mar 22, 2025", description: "Replacement laptop (old one damaged)", status: "pending" },
+  ];
+
+  const displayExpenses = error ? mockExpenses : expenses;
+
+  const handleAction = async (id: string, action: "approve" | "reject") => {
+    const success = await updateExpenseStatus(id, action, comments[id]);
+    if (success) {
+      // Clear comment after successful action
+      setComments(prev => {
+        const newComments = { ...prev };
+        delete newComments[id];
+        return newComments;
+      });
+      // Collapse the expanded item
+      if (expanded === id) {
+        setExpanded(null);
+      }
+    }
   };
 
-  const pending = expenses.filter((e) => e.status === "pending");
-  const resolved = expenses.filter((e) => e.status !== "pending");
+  const pending = displayExpenses.filter((e) => e.status === "pending");
+  const resolved = displayExpenses.filter((e) => e.status !== "pending");
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-slate-500">Loading approvals...</div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -108,14 +130,14 @@ export default function ApprovalsPage() {
                 {/* Action Buttons */}
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => handleAction(exp.id, "approved")}
+                    onClick={() => handleAction(exp.id, "approve")}
                     className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors shadow-sm shadow-emerald-200"
                   >
                     <CheckCircle2 size={15} />
                     Approve
                   </button>
                   <button
-                    onClick={() => handleAction(exp.id, "rejected")}
+                    onClick={() => handleAction(exp.id, "reject")}
                     className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors shadow-sm shadow-red-200"
                   >
                     <XCircle size={15} />
@@ -129,14 +151,14 @@ export default function ApprovalsPage() {
             {expanded !== exp.id && (
               <div className="border-t border-slate-100 px-6 py-3 flex items-center gap-3 bg-slate-50/50">
                 <button
-                  onClick={() => handleAction(exp.id, "approved")}
+                  onClick={() => handleAction(exp.id, "approve")}
                   className="flex items-center gap-1.5 text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition-colors"
                 >
                   <CheckCircle2 size={14} /> Approve
                 </button>
                 <span className="text-slate-200">·</span>
                 <button
-                  onClick={() => handleAction(exp.id, "rejected")}
+                  onClick={() => handleAction(exp.id, "reject")}
                   className="flex items-center gap-1.5 text-sm font-semibold text-red-500 hover:text-red-600 transition-colors"
                 >
                   <XCircle size={14} /> Reject
