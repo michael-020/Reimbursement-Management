@@ -149,6 +149,7 @@ export default function CreateUserPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
                 Name <span className="text-red-400">*</span>
@@ -159,8 +160,15 @@ export default function CreateUserPage() {
                 value={formData.name}
                 onChange={handleInputChange}
                 placeholder="Jordan Smith"
-                className="w-full text-sm border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all placeholder-slate-300 text-slate-800"
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+                className={`w-full text-sm border rounded-xl px-4 py-3 outline-none focus:ring-2 transition-all placeholder-slate-300 ${
+                  errors.name
+                    ? "border-red-300 focus:border-red-400 focus:ring-red-100 text-red-800"
+                    : "border-slate-200 focus:border-amber-400 focus:ring-amber-100 text-slate-800"
+                }`}
               />
+              {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
             </div>
 
             <div>
@@ -222,6 +230,7 @@ export default function CreateUserPage() {
                     <option key={r} value={r.toLowerCase()}>{r}</option>
                   ))}
                 </select>
+                {errors.role && <p className="text-xs text-red-500 mt-1">{errors.role}</p>}
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -239,6 +248,10 @@ export default function CreateUserPage() {
                     <option key={manager.id} value={manager.id}>{manager.name}</option>
                   ))}
                 </select>
+                {errors.managerId && <p className="text-xs text-red-500 mt-1">{errors.managerId}</p>}
+                {!isLoadingManagers && managers.length === 0 && selectedRole !== "admin" && (
+                  <p className="text-xs text-amber-500 mt-1">No managers available. Please create a manager first.</p>
+                )}
               </div>
             </div>
 
@@ -258,6 +271,7 @@ export default function CreateUserPage() {
                 {isLoading ? "Creating..." : "Create User"}
               </button>
             </div>
+          </form>
           </form>
         </Card>
       </div>
