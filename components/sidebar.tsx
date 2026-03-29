@@ -28,13 +28,10 @@ const navItems: Record<Role, NavItem[]> = {
     { label: "Expenses", href: "/admin/expenses", icon: <Receipt size={18} /> },
   ],
   manager: [
-    { label: "Dashboard", href: "/manager", icon: <LayoutDashboard size={18} /> },
-    { label: "Approvals", href: "/manager/approvals", icon: <CheckCircle2 size={18} /> },
+    { label: "Expenses", href: "/manager/expenses", icon: <Receipt size={18} /> },
   ],
   employee: [
-    { label: "Dashboard", href: "/employee", icon: <LayoutDashboard size={18} /> },
-    { label: "Submit Expense", href: "/employee/submit-expense", icon: <PlusSquare size={18} /> },
-    { label: "My Expenses", href: "/employee/my-expenses", icon: <ClipboardList size={18} /> },
+    { label: "Expenses", href: "/employee/expenses", icon: <Receipt size={18} /> },
   ],
 };
 

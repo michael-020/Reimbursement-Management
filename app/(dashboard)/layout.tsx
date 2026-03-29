@@ -1,13 +1,26 @@
+"use client";
+
 import Sidebar from "@/components/sidebar";
 import Navbar from "@/components/navbar";
-
-const role = "admin" as const; 
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { authUser, isLoading } = useAuthStore();
+
+  if (isLoading || !authUser) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-50">
+        <div className="text-slate-500">Loading...</div>
+      </div>
+    );
+  }
+
+  const role = authUser.role.toLowerCase() as "admin" | "manager" | "employee";
+
   return (
     <div className="flex h-screen bg-slate-50 font-sans overflow-hidden">
       <Sidebar role={role} />

@@ -1,90 +1,149 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { receiptsApi, Receipt, PaginatedResponse } from "../api";
+import { useState, useEffect } from 'react';
+import { axiosInstance } from '@/lib/axios';
+import { AxiosError } from 'axios';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { toast } from 'sonner';
+
+interface Expense {
+  id: string;
+  employeeName?: string;
+  employeeEmail?: string;
+  employeeRole?: string;
+  amount: string;
+  currency: string;
+  category: string;
+  description: string;
+  date: string;
+  status: 'pending' | 'approved' | 'rejected';
+  receiptUrl?: string;
+  createdAt: string;
+  approvals?: Array<{
+    id: string;
+    status: string;
+    approverName: string;
+    approverEmail: string;
+    approverRole: string;
+    createdAt: string;
+  }>;
+  company?: {
+    id: string;
+    name: string;
+    currency: string;
+  };
+  canApprove?: boolean;
+}
+
+interface CreateExpenseData {
+  amountOriginal: number;
+  currencyOriginal: string;
+  amountConverted: number;
+  currencyCompany: string;
+  conversionRate: number;
+  category: string;
+  description: string;
+  expenseDate: string;
+  receiptUrl?: string;
+}
 
 interface UseExpensesOptions {
-  status?: string;
-  category?: string;
-  page?: number;
-  limit?: number;
   autoFetch?: boolean;
 }
 
-export function useExpenses(options: UseExpensesOptions = {}) {
-  const [expenses, setExpenses] = useState<Receipt[]>([]);
+export function useExpenses({ autoFetch = false }: UseExpensesOptions = {}) {
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pagination, setPagination] = useState({
-    total: 0,
-    page: 1,
-    limit: 10,
-    totalPages: 0,
-  });
+  const { authUser } = useAuthStore();
 
-  const fetchExpenses = async (fetchOptions?: Partial<UseExpensesOptions>) => {
-    setLoading(true);
-    setError(null);
-
+  const fetchExpenses = async () => {
     try {
-      const finalOptions = { ...options, ...fetchOptions };
-      const response = await receiptsApi.getAll(finalOptions) as PaginatedResponse<Receipt>;
-      
-      if (response.receipts) {
-        setExpenses(response.receipts);
-      } else if (response.data) {
-        setExpenses(response.data);
+      setLoading(true);
+      setError(null);
+
+      // Use different endpoints based on user role
+      let endpoint;
+      if (authUser?.role === 'ADMIN') {
+        endpoint = '/admin/expenses';
+      } else {
+        endpoint = '/expenses';
       }
-      
-      if (response.pagination) {
-        setPagination(response.pagination);
-      }
+
+      const response = await axiosInstance.get(endpoint);
+      setExpenses(response.data.expenses);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch expenses");
-      console.error("Error fetching expenses:", err);
+      console.error('Error fetching expenses:', err);
+      let errorMessage = 'Failed to fetch expenses';
+      if (err instanceof AxiosError && err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  const updateExpenseStatus = async (id: string, action: 'approve' | 'reject', comment?: string) => {
+  const createExpense = async (data: CreateExpenseData): Promise<boolean> => {
     try {
-      await receiptsApi.updateStatus(id, action, comment);
-      // Refresh the expenses list after updating
-      await fetchExpenses();
+      const response = await axiosInstance.post('/expenses', data);
+      
+      // Add the new expense to the list
+      if (response.data.expense) {
+        setExpenses(prev => [response.data.expense, ...prev]);
+      }
+      
+      toast.success('Expense submitted successfully');
       return true;
     } catch (err) {
+      console.error('Error creating expense:', err);
+      let errorMessage = 'Failed to create expense';
+      if (err instanceof AxiosError && err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      toast.error(errorMessage);
       setError(err instanceof Error ? err.message : "Failed to update expense");
       return false;
     }
   };
 
-  const createExpense = async (data: Parameters<typeof receiptsApi.create>[0]) => {
+  const updateExpenseStatus = async (expenseId: string, status: 'APPROVED' | 'REJECTED'): Promise<boolean> => {
     try {
-      await receiptsApi.create(data);
-      // Refresh the expenses list after creating
-      await fetchExpenses();
+      await axiosInstance.post(`/expenses/${expenseId}/approve`, { status });
+      
+      // Update the expense in the list
+      setExpenses(prev => prev.map(exp => 
+        exp.id === expenseId 
+          ? { ...exp, status: status.toLowerCase() as 'approved' | 'rejected' }
+          : exp
+      ));
+      
+      toast.success(`Expense ${status.toLowerCase()} successfully`);
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create expense");
+      console.error('Error updating expense status:', err);
+      let errorMessage = `Failed to ${status.toLowerCase()} expense`;
+      if (err instanceof AxiosError && err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      toast.error(errorMessage);
       return false;
     }
   };
 
   useEffect(() => {
-    if (options.autoFetch !== false) {
+    if (autoFetch && authUser) {
       fetchExpenses();
     }
-  }, [options.status, options.category, options.page, options.limit]);
+  }, [autoFetch, authUser]);
 
   return {
     expenses,
     loading,
     error,
-    pagination,
     fetchExpenses,
-    updateExpenseStatus,
     createExpense,
-    refetch: () => fetchExpenses(),
+    updateExpenseStatus,
   };
 }

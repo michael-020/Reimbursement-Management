@@ -37,10 +37,8 @@ export default function SigninPage() {
         // Redirect based on role
         const roleRoutes: { [key: string]: string } = {
           ADMIN: '/admin',
-          EMPLOYEE: '/employee',
-          MANAGER: '/manager',
-          FINANCE: '/finance',
-          DIRECTOR: '/director',
+          EMPLOYEE: '/employee/expenses',
+          MANAGER: '/manager/expenses',
         };
         
         const redirectPath = result.role ? roleRoutes[result.role] || '/home' : '/home';
