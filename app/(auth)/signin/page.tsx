@@ -33,7 +33,20 @@ export default function SigninPage() {
       
       if (result.success) {
         toast.success('Signin successful! Redirecting...');
-        router.push('/home');
+        
+        // Redirect based on role
+        const roleRoutes: { [key: string]: string } = {
+          ADMIN: '/admin',
+          EMPLOYEE: '/employee',
+          MANAGER: '/manager',
+          FINANCE: '/finance',
+          DIRECTOR: '/director',
+        };
+        
+        const redirectPath = result.role ? roleRoutes[result.role] || '/home' : '/home';
+        setTimeout(() => {
+          router.push(redirectPath);
+        }, 1500);
       } else {
         toast.error(result.message || 'Signin failed');
       }

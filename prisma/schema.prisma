@@ -24,9 +24,7 @@ model User {
   companyId String?
   company   Company?   @relation("CompanyUsers", fields: [companyId], references: [id])
   adminOf Company? @relation("CompanyAdmin")
-  forgotPasswordId  String?
-  forgotPassword  ForgotPassword? @relation(fields: [forgotPasswordId], references: [id])
-  
+  forgotPasswords ForgotPassword[]
   specificApproverRules ApprovalRule[] @relation("SpecificApproverRules")
   specificApproverSteps ApprovalStep[] @relation("SpecificApproverSteps")
   
@@ -85,8 +83,15 @@ model Approval {
 }
 
 model ForgotPassword {
-  id  String @id
-  users User[]
+  id  String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  tempPassword String
+  expiresAt DateTime
+  isUsed Boolean @default(false)
+  
+  createdAt DateTime @default(now())
 }
 
 model ApprovalRule {

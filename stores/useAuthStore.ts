@@ -32,7 +32,7 @@ interface AuthStore {
   hasCheckedSession: boolean;
   error: string | null;
   signup: (data: SignupData) => Promise<{ success: boolean; message: string }>;
-  signin: (data: SigninData) => Promise<{ success: boolean; message: string }>;
+  signin: (data: SigninData) => Promise<{ success: boolean; message: string; role?: string }>;
   getSession: () => Promise<void>;
   logout: () => void;
   clearError: () => void;
@@ -77,22 +77,25 @@ export const useAuthStore = create<AuthStore>((set) => ({
     }
   },
 
-  signin: async (data: SigninData): Promise<{ success: boolean; message: string }> => {
+  signin: async (data: SigninData): Promise<{ success: boolean; message: string; role?: string }> => {
     set({ isLoading: true, error: null });
     try {
       const response = await axiosInstance.post('/signin', data);
 
-      // Get user data by fetching profile or from your API
-      // For now, store basic info from the request
-      set({
-        authUser: {
-          id: response.data.user.email, // Placeholder, you might want to fetch actual user data
-          email: response.data.user.email,
-          name: response.data.user.name,
-          role: response.data.user.role,
-        },
-        isLoading: false,
-      });
+      // Get user data from response
+      if (response.data.user) {
+        set({
+          authUser: {
+            id: response.data.user.id,
+            email: response.data.user.email,
+            name: response.data.user.name,
+            role: response.data.user.role,
+          },
+          isLoading: false,
+        });
+
+        return { success: true, message: response.data.message, role: response.data.user.role };
+      }
 
       return { success: true, message: response.data.message };
     } catch (err) {
