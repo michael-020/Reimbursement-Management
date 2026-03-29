@@ -1,7 +1,7 @@
 import Sidebar from "@/components/sidebar";
 import Navbar from "@/components/navbar";
 
-const role = "admin" as const; 
+const role = "employee" as const; 
 
 export default function DashboardLayout({
   children,
