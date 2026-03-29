@@ -69,7 +69,7 @@ export const POST = async (req: NextRequest) => {
   });
 
   return NextResponse.json(
-    { message: "Signed in successfully" },
+    { message: "Signed in successfully", user: { id: user.id, name: user.name, email: user.email, role: user.role } },
     { status: 200 },
   );
 };
