@@ -4,12 +4,13 @@ import prisma from "@/prisma/index"
 import { v4 as uuidv4 } from "uuid"
 
 export const POST = async (req: NextRequest) => {
-  const { id } = await auth()
+  const { id,  } = await auth()
   const forgotId = uuidv4()
   try {
     const forgotPassword = await prisma.forgotPassword.create({
       data: {
-        id: forgotId
+        id: forgotId,
+        userId: id
       }
     });
     
