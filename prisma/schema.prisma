@@ -24,7 +24,7 @@ model User {
   companyId String?
   company   Company?   @relation("CompanyUsers", fields: [companyId], references: [id])
   adminOf Company? @relation("CompanyAdmin")
-  forgotPasswordId  String
+  forgotPasswordId  String?
   forgotPassword  ForgotPassword? @relation(fields: [forgotPasswordId], references: [id])
   createdAt DateTime @default(now())
 }
