@@ -3,6 +3,7 @@ import z from "zod";
 import prisma from "@/prisma/index"
 import { Role } from '../../../generated/prisma/enums';
 import { v4 as uuidv4 } from 'uuid';
+import bcrypt from "bcrypt"
 
 const SignupSchema = z.object({
   name: z.string(),
@@ -47,13 +48,15 @@ export const POST = async (req: NextRequest) => {
       status: 400
     })
   }
+  const hashedPassword = await bcrypt.hash(password, 10)
+  
   try {
     const [adminDb, companyDb] = await Promise.all([
       prisma.user.create({
         data: {
           id: adminId,
           email,
-          password,
+          password: hashedPassword,
           name,
           role: Role.ADMIN
         }
