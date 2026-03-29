@@ -77,14 +77,6 @@ model Approval {
   createdAt  DateTime  @default(now())
 }
 
-model OTP {
-  id        String   @id @unique @default(uuid())
-  email     String   @unique
-  otp       String
-  createdAt DateTime @default(now())
-  expiresAt DateTime
-}
-
 enum ApproverType {
   MANAGER
   FINANCE

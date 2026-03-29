@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, PageHeader } from "@/components/ui/card";
-import { ShieldCheck, ChevronRight } from "lucide-react";
+import { ShieldCheck, ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
 
 const defaultRule = {
@@ -82,12 +82,14 @@ export default function ApprovalRulesPage() {
           </div>
         </div>
 
-        {/* Edit */}
-        <Link
-          href="/admin/approval-rules/edit"
-          className="text-amber-600 font-semibold text-sm flex items-center gap-1"
-        >
-          Edit Rule <ChevronRight size={14} />
+        <Link href="/admin/approval-rules/create">
+          <Card className="p-6 flex flex-col items-center justify-center text-center min-h-70 border-dashed border-2 border-slate-200 hover:border-amber-300 hover:bg-amber-50/30 transition-all duration-200 cursor-pointer group">
+            <div className="w-12 h-12 rounded-xl bg-slate-100 group-hover:bg-amber-100 flex items-center justify-center mb-3 transition-colors">
+              <Plus size={20} className="text-slate-400 group-hover:text-amber-600 transition-colors" />
+            </div>
+            <p className="text-sm font-semibold text-slate-700 group-hover:text-amber-700 transition-colors">Create New Rule</p>
+            <p className="text-xs text-slate-400 mt-1">Define a new approval workflow</p>
+          </Card>
         </Link>
       </Card>
     </div>
