@@ -4,16 +4,10 @@ import { useState } from "react";
 import { Card, PageHeader, Badge } from "@/components/ui/card";
 import { CheckCircle2, XCircle, MessageSquare, ChevronDown, ChevronUp, FileText } from "lucide-react";
 import { useExpenses } from "@/lib/hooks/useExpenses";
+import { toast } from "sonner";
+import { Receipt } from "@/lib/api";
 
-interface Expense {
-  id: string;
-  employee: string;
-  amount: string;
-  category: string;
-  date: string;
-  description: string;
-  status: "pending" | "approved" | "rejected";
-}
+interface Expense extends Receipt {}
 
 const categoryColors: Record<string, string> = {
   Travel: "bg-sky-50 text-sky-700",
@@ -29,34 +23,32 @@ export default function ApprovalsPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const { expenses, loading, error, updateExpenseStatus, refetch } = useExpenses({ autoFetch: true });
 
-  // Fallback to mock data if API fails
-  const mockExpenses: Expense[] = [
-    { id: "EXP-018", employee: "Jordan Smith", amount: "$1,240", category: "Travel", date: "Mar 28, 2025", description: "Flight and hotel for NYC client meeting (March 28-30)", status: "pending" },
-    { id: "EXP-017", employee: "Casey Brown", amount: "$890", category: "Training", date: "Mar 26, 2025", description: "AWS Solutions Architect certification exam and study materials", status: "pending" },
-    { id: "EXP-016", employee: "Taylor Davis", amount: "$145", category: "Office Supplies", date: "Mar 25, 2025", description: "Ergonomic mouse, USB hub, and desk organiser", status: "pending" },
-    { id: "EXP-015", employee: "Riley Johnson", amount: "$2,300", category: "Equipment", date: "Mar 22, 2025", description: "Replacement laptop (old one damaged)", status: "pending" },
-  ];
-
-  const displayExpenses = error ? mockExpenses : expenses;
+  // Filter for pending expenses only
+  const pendingExpenses = expenses.filter(expense => expense.status === "pending");
 
   const handleAction = async (id: string, action: "approve" | "reject") => {
     const success = await updateExpenseStatus(id, action, comments[id]);
     if (success) {
+      toast.success(`Expense ${action}d successfully`);
       // Clear comment after successful action
       setComments(prev => {
         const newComments = { ...prev };
         delete newComments[id];
         return newComments;
       });
-      // Collapse the expanded item
-      if (expanded === id) {
-        setExpanded(null);
-      }
+      // Refetch to get updated data
+      refetch();
+    } else {
+      toast.error(`Failed to ${action} expense`);
     }
   };
 
-  const pending = displayExpenses.filter((e) => e.status === "pending");
-  const resolved = displayExpenses.filter((e) => e.status !== "pending");
+  const toggleExpand = (id: string) => {
+    setExpanded(expanded === id ? null : id);
+  };
+
+  const pending = pendingExpenses.filter((e) => e.status === "pending");
+  const resolved = pendingExpenses.filter((e) => e.status !== "pending");
 
   if (loading) {
     return (
@@ -97,7 +89,7 @@ export default function ApprovalsPage() {
               <div className="flex items-center gap-4">
                 <span className="text-xl font-bold text-slate-900">{exp.amount}</span>
                 <button
-                  onClick={() => setExpanded((prev) => (prev === exp.id ? null : exp.id))}
+                  onClick={() => toggleExpand(exp.id)}
                   className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 transition-colors"
                 >
                   {expanded === exp.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}

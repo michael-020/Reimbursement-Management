@@ -95,6 +95,17 @@ export function useExpenses({ autoFetch = false }: UseExpensesOptions = {}) {
       }
       
       toast.success('Expense submitted successfully');
+      // Extract of actual expense ID from the formatted ID (e.g., EXP-123456 -> 123456)
+      const expenseId = id.replace('EXP-', '');
+      
+      const response = await fetch(`/api/approvals/${expenseId}`, {
+        method: 'POST',
+        body: JSON.stringify({ action, comment }),
+      });
+      
+      // Refetch expenses to get updated data
+      await fetchExpenses();
+      
       return true;
     } catch (err) {
       console.error('Error creating expense:', err);
@@ -103,7 +114,7 @@ export function useExpenses({ autoFetch = false }: UseExpensesOptions = {}) {
         errorMessage = err.response.data.message;
       }
       toast.error(errorMessage);
-      setError(err instanceof Error ? err.message : "Failed to update expense");
+      console.error("Error updating expense status:", err);
       return false;
     }
   };
