@@ -8,7 +8,7 @@ const UpdateApprovalRuleSchema = z.object({
   description: z.string().optional(),
   ruleType: z.enum(["PERCENTAGE", "SPECIFIC_APPROVER", "HYBRID"]).optional(),
   percentageThreshold: z.number().min(1).max(100).optional(),
-  specificApproverId: z.string().uuid().optional(),
+  specificApproverId: z.string().optional(),
   isActive: z.boolean().optional(),
 });
 
