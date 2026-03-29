@@ -122,7 +122,7 @@ export default function ApprovalRulesPage() {
         ))}
 
         <Link href="/admin/approval-rules/create">
-          <Card className="p-6 flex flex-col items-center justify-center text-center min-h-[280px] border-dashed border-2 border-slate-200 hover:border-amber-300 hover:bg-amber-50/30 transition-all duration-200 cursor-pointer group">
+          <Card className="p-6 flex flex-col items-center justify-center text-center min-h-70 border-dashed border-2 border-slate-200 hover:border-amber-300 hover:bg-amber-50/30 transition-all duration-200 cursor-pointer group">
             <div className="w-12 h-12 rounded-xl bg-slate-100 group-hover:bg-amber-100 flex items-center justify-center mb-3 transition-colors">
               <Plus size={20} className="text-slate-400 group-hover:text-amber-600 transition-colors" />
             </div>
