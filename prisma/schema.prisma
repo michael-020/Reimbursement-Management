@@ -24,7 +24,8 @@ model User {
   companyId String?
   company   Company?   @relation("CompanyUsers", fields: [companyId], references: [id])
   adminOf Company? @relation("CompanyAdmin")
-
+  forgotPasswordId  String
+  forgotPassword  ForgotPassword? @relation(fields: [forgotPasswordId], references: [id])
   createdAt DateTime @default(now())
 }
 
@@ -75,6 +76,11 @@ model Approval {
 
   approvedAt DateTime?
   createdAt  DateTime  @default(now())
+}
+
+model ForgotPassword {
+  id  String @id
+  users User[]
 }
 
 enum ApproverType {
