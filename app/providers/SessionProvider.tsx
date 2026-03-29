@@ -22,6 +22,7 @@ useEffect(() => {
     pathname === '/' ||
     pathname.startsWith('/signin') ||
     pathname.startsWith('/signup') ||
+    pathname.startsWith('/forgot-password') ||
     authUser ||
     hasCheckedSession 
   ) {

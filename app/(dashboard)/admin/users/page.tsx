@@ -1,23 +1,87 @@
-import { Card, PageHeader, Badge } from "@/components/ui/card";
-import { UserPlus, Search, MoreHorizontal, Mail } from "lucide-react";
-import Link from "next/link";
+'use client';
 
-const users = [
-  { id: 1, name: "Jordan Smith", email: "jordan@company.com", role: "Employee", manager: "Morgan Lee", status: "active" as const, joined: "Jan 15, 2024", expenses: 14 },
-  { id: 2, name: "Riley Johnson", email: "riley@company.com", role: "Employee", manager: "Morgan Lee", status: "active" as const, joined: "Feb 3, 2024", expenses: 8 },
-  { id: 3, name: "Morgan Lee", email: "morgan@company.com", role: "Manager", manager: "Alex Carter", status: "active" as const, joined: "Dec 1, 2023", expenses: 22 },
-  { id: 4, name: "Casey Brown", email: "casey@company.com", role: "Employee", manager: "Sam Wilson", status: "inactive" as const, joined: "Mar 10, 2024", expenses: 3 },
-  { id: 5, name: "Sam Wilson", email: "sam@company.com", role: "Manager", manager: "Alex Carter", status: "active" as const, joined: "Nov 20, 2023", expenses: 31 },
-  { id: 6, name: "Taylor Davis", email: "taylor@company.com", role: "Employee", manager: "Morgan Lee", status: "active" as const, joined: "Mar 1, 2024", expenses: 5 },
-];
+import { useEffect, useState } from 'react';
+import { Card, PageHeader } from "@/components/ui/card";
+import { UserPlus, Search } from "lucide-react";
+import Link from "next/link";
+import { axiosInstance } from '@/lib/axios';
+import { AxiosError } from 'axios';
+import { toast } from 'sonner';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  manager?: {
+    id: string;
+    name: string;
+  } | null;
+  createdAt: string;
+}
 
 const roleColors: Record<string, string> = {
-  Admin: "bg-amber-100 text-amber-800",
-  Manager: "bg-sky-100 text-sky-800",
-  Employee: "bg-slate-100 text-slate-700",
+  ADMIN: "bg-amber-100 text-amber-800",
+  MANAGER: "bg-sky-100 text-sky-800",
+  EMPLOYEE: "bg-slate-100 text-slate-700",
+  FINANCE: "bg-green-100 text-green-800",
+  DIRECTOR: "bg-purple-100 text-purple-800",
 };
 
 export default function UsersPage() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [sendingPasswordFor, setSendingPasswordFor] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setIsLoading(true);
+        const response = await axiosInstance.get('/admin/users');
+        setUsers(response.data.users);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        let errorMessage = 'Failed to fetch users';
+        if (error instanceof AxiosError && error.response?.data?.msg) {
+          errorMessage = error.response.data.msg as string;
+        }
+        toast.error(errorMessage);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  const handleSendPassword = async (userId: string, userEmail: string) => {
+    setSendingPasswordFor(userId);
+    try {
+      await axiosInstance.post(`/admin/send-password/${userId}`);
+      toast.success(`Password sent to ${userEmail}`);
+    } catch (error) {
+      console.error('Error sending password:', error);
+      let errorMessage = 'Failed to send password';
+      if (error instanceof AxiosError && error.response?.data?.msg) {
+        errorMessage = error.response.data.msg as string;
+      }
+      toast.error(errorMessage);
+    } finally {
+      setSendingPasswordFor(null);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading users...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <PageHeader
@@ -46,9 +110,10 @@ export default function UsersPage() {
           </div>
           <select className="text-sm border border-slate-200 rounded-xl px-4 py-2 bg-white text-slate-600 outline-none cursor-pointer hover:border-slate-300 transition-colors">
             <option value="">All Roles</option>
-            <option value="admin">Admin</option>
-            <option value="manager">Manager</option>
-            <option value="employee">Employee</option>
+            <option value="MANAGER">Manager</option>
+            <option value="EMPLOYEE">Employee</option>
+            <option value="FINANCE">Finance</option>
+            <option value="DIRECTOR">Director</option>
           </select>
         </div>
 
@@ -56,60 +121,45 @@ export default function UsersPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/50">
-                <th className="text-left px-6 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">User</th>
+                <th className="text-left px-6 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Name</th>
+                <th className="text-left px-6 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</th>
                 <th className="text-left px-6 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Role</th>
                 <th className="text-left px-6 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Manager</th>
-                <th className="text-left px-6 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Expenses</th>
-                <th className="text-left px-6 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                <th className="text-left px-6 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Joined</th>
-                <th className="px-6 py-3.5" />
+                <th className="text-left px-6 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {users.map((user) => (
-                <tr key={user.id} className="hover:bg-slate-50 transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-linear-to-br from-slate-200 to-slate-300 flex items-center justify-center text-xs font-bold text-slate-700 shrink-0">
-                        {user.name.split(" ").map((n) => n[0]).join("")}
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-slate-800">{user.name}</p>
-                        <p className="text-xs text-slate-400 flex items-center gap-1">
-                          <Mail size={10} />
-                          {user.email}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${roleColors[user.role]}`}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-600">{user.manager}</td>
-                  <td className="px-6 py-4 text-sm font-semibold text-slate-700">{user.expenses}</td>
-                  <td className="px-6 py-4">
-                    <Badge status={user.status} />
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-500">{user.joined}</td>
-                  <td className="px-6 py-4">
-                    <button className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-                      <MoreHorizontal size={16} className="text-slate-500" />
-                    </button>
+              {users.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
+                    No users found
                   </td>
                 </tr>
-              ))}
+              ) : (
+                users.map((user) => (
+                  <tr key={user.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 text-sm font-semibold text-slate-800">{user.name}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600">{user.email}</td>
+                    <td className="px-6 py-4">
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${roleColors[user.role] || 'bg-slate-100 text-slate-700'}`}>
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600">{user.manager?.name || '-'}</td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => handleSendPassword(user.id, user.email)}
+                        disabled={sendingPasswordFor === user.id}
+                        className="bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-sm px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {sendingPasswordFor === user.id ? 'Sending...' : 'Send Password'}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
-        </div>
-
-        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
-          <p className="text-sm text-slate-500">Showing <span className="font-semibold text-slate-700">6</span> of <span className="font-semibold text-slate-700">128</span> users</p>
-          <div className="flex items-center gap-2">
-            <button className="text-sm px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">Previous</button>
-            <button className="text-sm px-4 py-2 rounded-xl bg-amber-500 text-slate-900 font-semibold hover:bg-amber-600 transition-colors">Next</button>
-          </div>
         </div>
       </Card>
     </div>

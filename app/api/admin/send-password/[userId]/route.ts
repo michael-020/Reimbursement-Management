@@ -14,10 +14,11 @@ function generateRandomPassword(length: number = 12): string {
 
 export const POST = async (
   req: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) => {
   try {
     const authData = await auth();
+    const userId = (await params).userId
     const adminUser = await prisma.user.findUnique({
       where: { id: authData.id },
     });
@@ -30,7 +31,7 @@ export const POST = async (
     }
 
     const targetUser = await prisma.user.findUnique({
-      where: { id: params.userId },
+      where: { id: userId },
     });
 
     if (!targetUser) {
