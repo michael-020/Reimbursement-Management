@@ -135,8 +135,15 @@ export const useAuthStore = create<AuthStore>((set) => ({
     }
   },
 
-  logout: () => {
-    set({ authUser: null, error: null });
+  logout: async () => {
+    try {
+      await axiosInstance.post('/auth/logout');
+      set({ authUser: null, error: null });
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still clear local state even if API call fails
+      set({ authUser: null, error: null });
+    }
   },
 
   clearError: () => {
