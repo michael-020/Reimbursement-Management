@@ -24,7 +24,6 @@ interface NavItem {
 const navItems: Record<Role, NavItem[]> = {
   admin: [
     { label: "Dashboard", href: "/admin", icon: <LayoutDashboard size={18} /> },
-    { label: "Users", href: "/admin/users", icon: <Users size={18} /> },
     { label: "Approval Rules", href: "/admin/approval-rules", icon: <ShieldCheck size={18} /> },
     { label: "Expenses", href: "/admin/expenses", icon: <Receipt size={18} /> },
   ],
