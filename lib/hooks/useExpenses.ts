@@ -96,17 +96,6 @@ export function useExpenses({ autoFetch = false }: UseExpensesOptions = {}) {
       }
       
       toast.success('Expense submitted successfully');
-      // Extract of actual expense ID from the formatted ID (e.g., EXP-123456 -> 123456)
-      const expenseId = id.replace('EXP-', '');
-      
-      const response = await fetch(`/api/approvals/${expenseId}`, {
-        method: 'POST',
-        body: JSON.stringify({ action, comment }),
-      });
-      
-      // Refetch expenses to get updated data
-      await fetchExpenses();
-      
       return true;
     } catch (err) {
       console.error('Error creating expense:', err);
@@ -115,14 +104,19 @@ export function useExpenses({ autoFetch = false }: UseExpensesOptions = {}) {
         errorMessage = err.response.data.message;
       }
       toast.error(errorMessage);
-      console.error("Error updating expense status:", err);
       return false;
     }
   };
 
-  const updateExpenseStatus = async (expenseId: string, status: 'APPROVED' | 'REJECTED'): Promise<boolean> => {
+  const updateExpenseStatus = async (expenseId: string, status: 'APPROVED' | 'REJECTED', comment?: string): Promise<boolean> => {
     try {
-      await axiosInstance.post(`/expenses/${expenseId}/approve`, { status });
+      // Extract actual expense ID from formatted ID if needed (e.g., EXP-123456 -> 123456)
+      const cleanId = expenseId.replace(/^EXP-/, '');
+      
+      await axiosInstance.post(`/api/approvals/${cleanId}`, { 
+        action: status.toLowerCase(), 
+        comment 
+      });
       
       // Update the expense in the list
       setExpenses(prev => prev.map(exp => 

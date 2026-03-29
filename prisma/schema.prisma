@@ -49,6 +49,7 @@ model Receipt {
 
   createdById String
   createdBy   User   @relation("CreatedReceipts", fields: [createdById], references: [id])
+  status    ApprovalStatus
 
   approvals Approval[]
   company   Company?   @relation(fields: [companyId], references: [id])

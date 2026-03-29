@@ -21,7 +21,7 @@ async function getUserFromToken() {
   }
 }
 
-export const POST = async (req: NextRequest, { params }: { params: { expenseId: string } }) => {
+export const POST = async (req: NextRequest, { params }: { params: Promise<{ expenseId: string }> }) => {
   try {
     const user = await getUserFromToken();
     
@@ -29,7 +29,7 @@ export const POST = async (req: NextRequest, { params }: { params: { expenseId: 
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { expenseId } = params;
+    const { expenseId } = await params;
     const body = await req.json();
     const { action, comment } = body;
 
@@ -98,7 +98,6 @@ export const POST = async (req: NextRequest, { params }: { params: { expenseId: 
         receiptId: expenseId,
         approverId: user.id,
         status: action.toUpperCase() as "APPROVED" | "REJECTED",
-        comment,
         order: nextOrder
       },
       include: {
@@ -142,7 +141,7 @@ export const POST = async (req: NextRequest, { params }: { params: { expenseId: 
           if (totalCount > 0 && (approvedCount / totalCount) * 100 >= rule.percentageThreshold) {
             await prisma.receipt.update({
               where: { id: expenseId },
-              data: { status: "APPROVED" }
+              data: { status:  }
             });
             break;
           }
@@ -188,8 +187,10 @@ export const POST = async (req: NextRequest, { params }: { params: { expenseId: 
       });
     }
 
+    const pastTense = action === 'approve' ? 'approved' : 'rejected';
+
     return NextResponse.json({
-      message: `Expense ${action}d successfully`,
+      message: `Expense ${pastTense} successfully`,
       approval
     });
 
