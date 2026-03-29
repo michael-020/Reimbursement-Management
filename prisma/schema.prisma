@@ -24,7 +24,12 @@ model User {
   companyId String?
   company   Company?   @relation("CompanyUsers", fields: [companyId], references: [id])
   adminOf Company? @relation("CompanyAdmin")
-
+  forgotPasswordId  String?
+  forgotPassword  ForgotPassword? @relation(fields: [forgotPasswordId], references: [id])
+  
+  specificApproverRules ApprovalRule[] @relation("SpecificApproverRules")
+  specificApproverSteps ApprovalStep[] @relation("SpecificApproverSteps")
+  
   createdAt DateTime @default(now())
 }
 
@@ -58,6 +63,8 @@ model Company {
 
   users    User[]    @relation("CompanyUsers")
   receipts Receipt[]
+  approvalRules ApprovalRule[]
+  approvalSequences ApprovalSequence[]
 }
 
 model Approval {
@@ -75,6 +82,68 @@ model Approval {
 
   approvedAt DateTime?
   createdAt  DateTime  @default(now())
+}
+
+model ForgotPassword {
+  id  String @id
+  users User[]
+}
+
+model ApprovalRule {
+  id String @id @default(uuid())
+  
+  name String
+  description String?
+  
+  companyId String
+  company Company @relation(fields: [companyId], references: [id])
+  
+  ruleType ApprovalRuleType
+  percentageThreshold Int? // For percentage rules
+  specificApproverId String? // For specific approver rules
+  specificApprover User? @relation("SpecificApproverRules", fields: [specificApproverId], references: [id])
+  
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ApprovalSequence {
+  id String @id @default(uuid())
+  
+  name String
+  description String?
+  
+  companyId String
+  company Company @relation(fields: [companyId], references: [id])
+  
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  steps ApprovalStep[]
+}
+
+model ApprovalStep {
+  id String @id @default(uuid())
+  
+  sequenceId String
+  sequence ApprovalSequence @relation(fields: [sequenceId], references: [id])
+  
+  approverType ApproverType
+  specificApproverId String? // For specific user assignments
+  specificApprover User? @relation("SpecificApproverSteps", fields: [specificApproverId], references: [id])
+  
+  order Int // Order in the sequence (1, 2, 3...)
+  isRequired Boolean @default(true) // Whether this step is required or can be skipped
+  
+  createdAt DateTime @default(now())
+}
+
+enum ApprovalRuleType {
+  PERCENTAGE
+  SPECIFIC_APPROVER
+  HYBRID
 }
 
 enum ApproverType {

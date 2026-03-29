@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 import { axiosInstance } from '@/lib/axios';
 import { AxiosError } from 'axios';
+import { Role } from '../app/generated/prisma/enums';
 
 interface AuthUser {
   id: string;
   email: string;
   name: string;
-  role: string;
+  role: Role;
 }
 
 interface SignupData {
@@ -85,10 +86,10 @@ export const useAuthStore = create<AuthStore>((set) => ({
       // For now, store basic info from the request
       set({
         authUser: {
-          id: data.email, // Placeholder, you might want to fetch actual user data
-          email: data.email,
-          name: '',
-          role: '',
+          id: response.data.user.email, // Placeholder, you might want to fetch actual user data
+          email: response.data.user.email,
+          name: response.data.user.name,
+          role: response.data.user.role,
         },
         isLoading: false,
       });
