@@ -72,7 +72,7 @@ export default function ManagerExpensesPage() {
       />
 
       {/* Summary */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      {/* <div className="grid grid-cols-4 gap-4 mb-6">
         {[
           { label: "Total Amount", value: `$${total.toLocaleString()}`, color: "text-slate-900", icon: null },
           { label: "Pending Review", value: pending.toString(), color: "text-amber-600", icon: <Clock size={16} /> },
@@ -91,7 +91,7 @@ export default function ManagerExpensesPage() {
             </div>
           </Card>
         ))}
-      </div>
+      </div> */}
 
       {/* Filters */}
       <Card className="mb-6 p-4">
@@ -139,7 +139,7 @@ export default function ManagerExpensesPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/50">
-                {["ID", "Employee", "Description", "Category", "Amount", "Date", "Status", "Actions"].map((h) => (
+                {[ "Employee", "Description", "Category", "Amount", "Date", "Status", "Actions"].map((h) => (
                   <th key={h} className="text-left px-6 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
@@ -154,7 +154,7 @@ export default function ManagerExpensesPage() {
               ) : (
                 filteredExpenses.map((exp) => (
                   <tr key={exp.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-mono font-semibold text-slate-500">{exp.id}</td>
+                    {/* <td className="px-6 py-4 text-sm font-mono font-semibold text-slate-500">{exp.id}</td> */}
                     <td className="px-6 py-4">
                       <p className="text-sm font-semibold text-slate-800">{exp.employeeName || 'Unknown'}</p>
                     </td>
