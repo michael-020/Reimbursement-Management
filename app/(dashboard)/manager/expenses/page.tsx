@@ -38,6 +38,11 @@ export default function ManagerExpensesPage() {
 
   const displayExpenses = error ? mockExpenses : expenses;
 
+  // Debug logging
+  console.log('Display expenses:', displayExpenses);
+  console.log('Error state:', error);
+  console.log('Loading state:', loading);
+
   const filteredExpenses = displayExpenses.filter(expense => {
     const matchesStatus = !selectedStatus || expense.status === selectedStatus;
     const matchesCategory = !selectedCategory || expense.category === selectedCategory;
@@ -173,7 +178,9 @@ export default function ManagerExpensesPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        {exp.status === 'pending' && exp.canApprove && (
+                        {/* Debug: Show conditions */}
+                        {console.log(`Expense ${exp.id}: status=${exp.status}, canApprove=${exp.canApprove}, condition=${exp.status === 'pending' && exp.canApprove}`)}
+                        {exp.status === 'pending' && (
                           <>
                             <button
                               onClick={() => handleStatusUpdate(exp.id, 'APPROVED')}

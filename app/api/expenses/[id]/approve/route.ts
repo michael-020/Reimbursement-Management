@@ -18,7 +18,10 @@ export async function POST(
 
     const { status } = await request.json();
     
+    console.log('Approval request:', { status, expenseId: (await params).id });
+    
     if (!['APPROVED', 'REJECTED'].includes(status)) {
+      console.log('Invalid status received:', status);
       return NextResponse.json(
         { message: 'Invalid status. Must be APPROVED or REJECTED' },
         { status: 400 }
@@ -32,6 +35,7 @@ export async function POST(
         createdBy: {
           select: {
             id: true,
+            name: true,
             role: true,
             managerId: true,
           }
@@ -40,7 +44,13 @@ export async function POST(
       }
     });
 
+    console.log('Found expense:', expense);
+    console.log('User role:', authUser.role);
+    console.log('User ID:', authUser.id);
+    console.log('Expense createdBy:', expense?.createdBy);
+
     if (!expense) {
+      console.log('Expense not found');
       return NextResponse.json(
         { message: 'Expense not found' },
         { status: 404 }
@@ -49,6 +59,7 @@ export async function POST(
 
     // Check permissions
     if (authUser.role === 'EMPLOYEE') {
+      console.log('Employee cannot approve expenses');
       return NextResponse.json(
         { message: 'Employees cannot approve expenses' },
         { status: 403 }
@@ -58,6 +69,7 @@ export async function POST(
     if (authUser.role === 'MANAGER') {
       // Managers can only approve expenses from their direct reports
       if (expense.createdBy.managerId !== authUser.id) {
+        console.log('Manager cannot approve - not direct report:', { managerId: expense.createdBy.managerId, userId: authUser.id });
         return NextResponse.json(
           { message: 'You can only approve expenses from your direct reports' },
           { status: 403 }
@@ -65,12 +77,31 @@ export async function POST(
       }
     }
 
-    // Check if already approved/rejected
-    if (expense.approvals.length > 0) {
-      return NextResponse.json(
-        { message: 'Expense has already been processed' },
-        { status: 400 }
-      );
+    // Check if already approved/rejected by checking manager's specific approval
+    const managerApproval = expense.approvals.find(a => a.approverId === authUser.id);
+    
+    if (managerApproval) {
+      if (managerApproval.status !== 'PENDING') {
+        console.log('Manager has already acted on this expense:', managerApproval.status);
+        return NextResponse.json(
+          { message: 'You have already processed this expense' },
+          { status: 400 }
+        );
+      }
+      
+      // Update existing pending approval
+      const updatedApproval = await prisma.approval.update({
+        where: { id: managerApproval.id },
+        data: {
+          status: status,
+          comments: status === 'REJECTED' ? 'Rejected by manager' : 'Approved by manager',
+        }
+      });
+      
+      return NextResponse.json({
+        message: `Expense ${status.toLowerCase()} successfully`,
+        approval: updatedApproval
+      });
     }
 
     const approval = await prisma.approval.create({
