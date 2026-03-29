@@ -1,0 +1,30 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String      @id @unique @default(uuid())
+  email         String      @unique
+  password      String?
+  provider      AUTHOPTIONS @default(CREDENTIALS)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @default(now())
+}
+
+model OTP {
+  id        String   @id @unique @default(uuid())
+  email     String   @unique
+  otp       String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+
+enum AUTHOPTIONS {
+  GOOGLE
+  CREDENTIALS
+}
