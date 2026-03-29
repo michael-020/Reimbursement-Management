@@ -35,7 +35,7 @@ export default function DefaultApprovalRulePage() {
 
   return (
     <div>
-      <Link href="/admin" className="flex items-center gap-2 mb-4 text-sm text-gray-500">
+      <Link href="/admin/approval-rules" className="flex items-center gap-2 mb-4 text-sm text-gray-500">
         <ArrowLeft size={14} />
         Back
       </Link>

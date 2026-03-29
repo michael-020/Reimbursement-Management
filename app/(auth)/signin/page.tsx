@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { toast } from 'sonner';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 const signinSchema = z.object({
   email: z.email('Invalid email address'),
@@ -14,7 +16,8 @@ const signinSchema = z.object({
 type SigninFormData = z.infer<typeof signinSchema>;
 
 export default function SigninPage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const { signin, isLoading: authLoading, error: authError, clearError } = useAuthStore();
   const {
     register,
     handleSubmit,
@@ -24,14 +27,19 @@ export default function SigninPage() {
   });
 
   const onSubmit = async (data: SigninFormData) => {
-    setIsLoading(true);
     try {
-      console.log('Sign in form data:', data);
-      // Logic to be added
+      clearError();
+      const result = await signin(data);
+      
+      if (result.success) {
+        toast.success('Signin successful! Redirecting...');
+        router.push('/home');
+      } else {
+        toast.error(result.message || 'Signin failed');
+      }
     } catch (error) {
       console.error(error);
-    } finally {
-      setIsLoading(false);
+      toast.error('An unexpected error occurred');
     }
   };
 
@@ -85,10 +93,10 @@ export default function SigninPage() {
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={authLoading}
             className="w-full mt-8 px-4 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white font-semibold rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Signing in...' : 'Login'}
+            {authLoading ? 'Signing in...' : 'Login'}
           </button>
         </form>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -12,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 const signupSchema = z
   .object({
@@ -42,7 +44,8 @@ interface Country {
 }
 
 export default function SignupPage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const { signup, isLoading: authLoading, error: authError, clearError } = useAuthStore();
   const [countries, setCountries] = useState<Country[]>([]);
   const [countriesLoading, setCountriesLoading] = useState(true);
   const [selectedCurrency, setSelectedCurrency] = useState<string>('');
@@ -93,19 +96,24 @@ export default function SignupPage() {
   };
 
   const onSubmit = async (data: SignupFormData) => {
-    setIsLoading(true);
     try {
+      clearError();
       const formDataWithCurrency = {
         ...data,
         currency: selectedCurrency,
       };
-      console.log('Sign up form data:', formDataWithCurrency);
-      // Logic to be added
-      toast.success("Signup sucessful")
+      
+      const result = await signup(formDataWithCurrency);
+      
+      if (result.success) {
+        toast.success('Signup successful! Redirecting to login...');
+        router.push('/signin');
+      } else {
+        toast.error(result.message || 'Signup failed');
+      }
     } catch (error) {
       console.error(error);
-    } finally {
-      setIsLoading(false);
+      toast.error('An unexpected error occurred');
     }
   };
 
@@ -257,10 +265,10 @@ export default function SignupPage() {
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={authLoading}
             className="w-full mt-8 px-4 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white font-semibold rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Creating Account...' : 'Signup'}
+            {authLoading ? 'Creating Account...' : 'Signup'}
           </button>
         </form>
       </div>

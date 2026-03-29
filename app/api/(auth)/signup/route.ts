@@ -27,7 +27,7 @@ export const POST = async (req: NextRequest) => {
     );
   }
   const { name, email, password, confirmPassword, company, country, currency } = parsedBody.data
-  if (password === confirmPassword) {
+  if (password !== confirmPassword) {
     return NextResponse.json({
       message: "Password and Confirm Password don't match"
     }, {
