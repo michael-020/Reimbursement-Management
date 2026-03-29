@@ -11,8 +11,12 @@ interface Expense {
   employeeName?: string;
   employeeEmail?: string;
   employeeRole?: string;
+  amountOriginal?: number;
+  currencyOriginal?: string;
+  amountConverted?: number;
+  currencyCompany?: string;
+  conversionRate?: number;
   amount: string;
-  currency: string;
   category: string;
   description: string;
   date: string;
@@ -38,9 +42,6 @@ interface Expense {
 interface CreateExpenseData {
   amountOriginal: number;
   currencyOriginal: string;
-  amountConverted: number;
-  currencyCompany: string;
-  conversionRate: number;
   category: string;
   description: string;
   expenseDate: string;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/actions/authAction';
 import { prisma } from '@/lib/prisma';
+import { convertCurrency } from '@/lib/currency';
 
 export async function GET() {
   try {
@@ -123,8 +124,12 @@ export async function GET() {
       employeeName: expense.createdBy.name,
       employeeEmail: expense.createdBy.email,
       employeeRole: expense.createdBy.role,
-      amount: `$${expense.amountConverted.toLocaleString()}`,
-      currency: expense.currencyCompany,
+      amountOriginal: expense.amountOriginal,
+      currencyOriginal: expense.currencyOriginal,
+      amountConverted: expense.amountConverted,
+      currencyCompany: expense.currencyCompany,
+      conversionRate: expense.conversionRate,
+      amount: `${expense.currencyCompany} ${expense.amountConverted.toLocaleString()}`,
       category: expense.category,
       description: expense.description,
       date: expense.expenseDate.toLocaleDateString(),
@@ -179,9 +184,6 @@ export async function POST(request: NextRequest) {
     const {
       amountOriginal,
       currencyOriginal,
-      amountConverted,
-      currencyCompany,
-      conversionRate,
       category,
       description,
       expenseDate,
@@ -189,14 +191,14 @@ export async function POST(request: NextRequest) {
     } = await request.json();
 
     // Validate required fields
-    if (!amountOriginal || !category || !description || !expenseDate) {
+    if (!amountOriginal || !currencyOriginal || !category || !description || !expenseDate) {
       return NextResponse.json(
         { message: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // Get user's company
+    // Get user's company to determine base currency
     const user = await prisma.user.findUnique({
       where: { id: authUser.id },
       include: { company: true }
@@ -206,6 +208,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { message: 'User not found' },
         { status: 404 }
+      );
+    }
+
+    if (!user.company) {
+      return NextResponse.json(
+        { message: 'User is not associated with a company' },
+        { status: 400 }
+      );
+    }
+
+    // Convert currency from original to company's base currency
+    const currencyCompany = user.company.currency;
+    let amountConverted, conversionRate;
+
+    try {
+      const conversion = await convertCurrency(
+        parseFloat(amountOriginal),
+        currencyOriginal,
+        currencyCompany
+      );
+      amountConverted = conversion.convertedAmount;
+      conversionRate = conversion.rate;
+    } catch (error) {
+      console.error('Currency conversion failed:', error);
+      return NextResponse.json(
+        { message: 'Failed to convert currency. Please try again.' },
+        { status: 500 }
       );
     }
 
@@ -249,8 +278,12 @@ export async function POST(request: NextRequest) {
       employeeName: expense.createdBy.name,
       employeeEmail: expense.createdBy.email,
       employeeRole: expense.createdBy.role,
-      amount: `$${expense.amountConverted.toLocaleString()}`,
-      currency: expense.currencyCompany,
+      amountOriginal: expense.amountOriginal,
+      currencyOriginal: expense.currencyOriginal,
+      amountConverted: expense.amountConverted,
+      currencyCompany: expense.currencyCompany,
+      conversionRate: expense.conversionRate,
+      amount: `${currencyCompany} ${expense.amountConverted.toLocaleString()}`,
       category: expense.category,
       description: expense.description,
       date: expense.expenseDate.toLocaleDateString(),
