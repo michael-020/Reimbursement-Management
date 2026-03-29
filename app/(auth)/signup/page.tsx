@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { toast } from 'sonner';
 
 const signupSchema = z
   .object({
@@ -100,6 +101,7 @@ export default function SignupPage() {
       };
       console.log('Sign up form data:', formDataWithCurrency);
       // Logic to be added
+      toast.success("Signup sucessful")
     } catch (error) {
       console.error(error);
     } finally {
