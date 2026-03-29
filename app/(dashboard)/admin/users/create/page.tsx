@@ -1,11 +1,31 @@
+"use client";
+
 import { Card, PageHeader } from "@/components/ui/card";
 import { ArrowLeft, UserPlus } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
-const managers = ["Morgan Lee", "Sam Wilson", "Alex Carter"];
-const roles = ["Employee", "Manager", "Admin"];
+interface User {
+  id: string;
+  name: string;
+  role: "admin" | "manager" | "employee" | "finance" | "director";
+}
+
+const users: User[] = [
+  { id: "user-001", name: "Morgan Lee", role: "manager" },
+  { id: "user-002", name: "Sam Wilson", role: "manager" },
+  { id: "user-003", name: "Alex Carter", role: "manager" },
+  { id: "user-004", name: "Taylor Chen", role: "admin" },
+  { id: "user-005", name: "Jordan Blake", role: "employee" },
+  { id: "user-006", name: "Casey Thompson", role: "finance" },
+  { id: "user-007", name: "Riley Davis", role: "director" },
+];
+
+const filteredManagers = users.filter((user) => user.role === "manager");
+const roles = ["Employee", "Manager", "Admin", "Finance", "Director"];
 
 export default function CreateUserPage() {
+  const [selectedRole, setSelectedRole] = useState<string>("");
   return (
     <div>
       <div className="mb-6">
@@ -35,27 +55,15 @@ export default function CreateUserPage() {
           </div>
 
           <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-5">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  First Name <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Jordan"
-                  className="w-full text-sm border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all placeholder-slate-300 text-slate-800"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Last Name <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Smith"
-                  className="w-full text-sm border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all placeholder-slate-300 text-slate-800"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Name <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Jordan Smith"
+                className="w-full text-sm border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all placeholder-slate-300 text-slate-800"
+              />
             </div>
 
             <div>
@@ -74,7 +82,11 @@ export default function CreateUserPage() {
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
                   Role <span className="text-red-400">*</span>
                 </label>
-                <select className="w-full text-sm border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all text-slate-700 bg-white cursor-pointer">
+                <select
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  className="w-full text-sm border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all text-slate-700 bg-white cursor-pointer"
+                >
                   <option value="">Select a role...</option>
                   {roles.map((r) => (
                     <option key={r} value={r.toLowerCase()}>{r}</option>
@@ -85,22 +97,16 @@ export default function CreateUserPage() {
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
                   Reporting Manager
                 </label>
-                <select className="w-full text-sm border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all text-slate-700 bg-white cursor-pointer">
+                <select
+                  disabled={selectedRole === "admin"}
+                  className="w-full text-sm border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all text-slate-700 bg-white cursor-pointer disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed"
+                >
                   <option value="">Select manager...</option>
-                  {managers.map((m) => (
-                    <option key={m} value={m}>{m}</option>
+                  {filteredManagers.map((manager) => (
+                    <option key={manager.id} value={manager.id}>{manager.name}</option>
                   ))}
                 </select>
               </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">Department</label>
-              <input
-                type="text"
-                placeholder="Engineering, Finance, HR..."
-                className="w-full text-sm border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all placeholder-slate-300 text-slate-800"
-              />
             </div>
 
             <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
