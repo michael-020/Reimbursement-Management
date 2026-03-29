@@ -7,11 +7,6 @@ import { useEffect } from "react"
 
 export default function Home(){
     const { authUser } = useAuthStore() 
-      const { getSession } = useAuthStore();
-
-  useEffect(() => {
-    getSession();
-  }, []);
 
     return <div>
         <Button className=' p-2 mr-4'  onClick={() => signOut({ callbackUrl: '/signin' })}>Sign Out</Button>

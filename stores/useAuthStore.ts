@@ -28,6 +28,8 @@ interface SigninData {
 interface AuthStore {
   authUser: AuthUser | null;
   isLoading: boolean;
+  isGettingSession: boolean;
+  hasCheckedSession: boolean;
   error: string | null;
   signup: (data: SignupData) => Promise<{ success: boolean; message: string }>;
   signin: (data: SigninData) => Promise<{ success: boolean; message: string }>;
@@ -39,6 +41,8 @@ interface AuthStore {
 export const useAuthStore = create<AuthStore>((set) => ({
   authUser: null,
   isLoading: false,
+  isGettingSession: false,
+  hasCheckedSession: false,
   error: null,
 
   signup: async (data: SignupData): Promise<{ success: boolean; message: string }> => {
@@ -104,7 +108,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   getSession: async (): Promise<void> => {
-    set({ isLoading: true });
+    set({ isGettingSession: true });
     try {
       const response = await axiosInstance.get('/auth/session');
       console.log("response: ", response)
@@ -117,13 +121,14 @@ export const useAuthStore = create<AuthStore>((set) => ({
             name: response.data.user.name,
             role: response.data.user.role,
           },
-          isLoading: false,
+          isGettingSession: false,
+          hasCheckedSession: true,
         });
       }
     } catch (err) {
       // Silently fail - user is not logged in
       console.log("Error while getting session: ", err)
-      set({ isLoading: false });
+      set({ isGettingSession: false });
     }
   },
 
