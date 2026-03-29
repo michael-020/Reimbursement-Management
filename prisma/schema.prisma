@@ -21,6 +21,7 @@ model User {
   receipts Receipt[] @relation("CreatedReceipts")
 
   approvals Approval[] @relation("UserApprovals")
+  company Company?
 
   createdAt DateTime  @default(now())
 }
@@ -31,6 +32,16 @@ model Receipt {
   createdById String
   createdBy User @relation("CreatedReceipts", fields: [createdById], references: [id])
   approvals   Approval[]
+}
+
+model Company {
+  id String @id @default(uuid())
+
+  name String
+  currency String
+  country String
+  userId String @unique
+  user   User @relation(fields: [userId], references: [id])
 }
 
 model Approval {
