@@ -7,40 +7,30 @@ datasource db {
   provider = "postgresql"
 }
 
-model Admin {
-  id      String  @id @default(uuid())
-  email   String  @unique
-  name    String
-  password  String
-  verified  Boolean @default(false)
-  token     String?
-}
-
-model Manager {
-  id String @id @default(uuid())
-  email String  @unique
+model User {
+  id       String  @id @default(uuid())
+  email    String  @unique
   password String
-  employees Employee[]
-}
+  name     String
 
-model Director {
-  id String @id @default(uuid())
-  email String @unique
-  password String
-}
+  role      Role
+  managerId String? @unique
+  manager   User?   @relation("UserManager", fields: [managerId], references: [id])
+  employees User[]  @relation("UserManager")
 
-model FinanceTeam {
-  id String @id @default(uuid())
-  email String @unique
-  password String
+  receipts Receipt[] @relation("CreatedReceipts")
+
+  approvals Approval[] @relation("UserApprovals")
+
+  createdAt DateTime  @default(now())
 }
 
 model Receipt {
-  id String @id @default(uuid())
-  amount  BigInt  
+  id          String     @id @default(uuid())
+  amount      BigInt
   createdById String
-  createdBy Employee  @relation(fields: [createdById], references: [id])
-  approvals Approval[]
+  createdBy User @relation("CreatedReceipts", fields: [createdById], references: [id])
+  approvals   Approval[]
 }
 
 model Approval {
@@ -50,24 +40,15 @@ model Approval {
   receipt Receipt @relation(fields: [receiptId], references: [id])
 
   approverId String
-  approverType ApproverType
+  approver User @relation("UserApprovals", fields: [approverId], references: [id])
 
   status ApprovalStatus @default(PENDING)
+
+  order Int // for approval flow (Manager → Finance → Director)
 
   approvedAt DateTime?
   createdAt DateTime @default(now())
 }
-
-model Employee {
-  id  String  @id @default(uuid())
-  email String  @unique
-  password  String
-  managerId String 
-  manager Manager @relation(fields: [managerId], references: [id])
-  receipts Receipt[]
-}
-
-
 
 model OTP {
   id        String   @id @unique @default(uuid())
@@ -76,7 +57,6 @@ model OTP {
   createdAt DateTime @default(now())
   expiresAt DateTime
 }
-
 
 enum ApproverType {
   MANAGER
@@ -88,4 +68,12 @@ enum ApprovalStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+  MANAGER
+  FINANCE
+  DIRECTOR
 }
