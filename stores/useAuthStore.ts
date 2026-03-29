@@ -30,6 +30,7 @@ interface AuthStore {
   error: string | null;
   signup: (data: SignupData) => Promise<{ success: boolean; message: string }>;
   signin: (data: SigninData) => Promise<{ success: boolean; message: string }>;
+  getSession: () => Promise<void>;
   logout: () => void;
   clearError: () => void;
 }
@@ -98,6 +99,30 @@ export const useAuthStore = create<AuthStore>((set) => ({
       }
       set({ error: message, isLoading: false });
       return { success: false, message };
+    }
+  },
+
+  getSession: async (): Promise<void> => {
+    set({ isLoading: true });
+    try {
+      const response = await axiosInstance.get('/auth/session');
+      console.log("response: ", response)
+
+      if (response.data.user) {
+        set({
+          authUser: {
+            id: response.data.user.id,
+            email: response.data.user.email,
+            name: response.data.user.name,
+            role: response.data.user.role,
+          },
+          isLoading: false,
+        });
+      }
+    } catch (err) {
+      // Silently fail - user is not logged in
+      console.log("Error while getting session: ", err)
+      set({ isLoading: false });
     }
   },
 
