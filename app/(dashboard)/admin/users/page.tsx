@@ -7,6 +7,13 @@ import Link from "next/link";
 import { axiosInstance } from '@/lib/axios';
 import { AxiosError } from 'axios';
 import { toast } from 'sonner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface User {
   id: string;
@@ -20,6 +27,14 @@ interface User {
   createdAt: string;
 }
 
+interface Manager {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  createdAt: string;
+}
+
 const roleColors: Record<string, string> = {
   ADMIN: "bg-amber-100 text-amber-800",
   MANAGER: "bg-sky-100 text-sky-800",
@@ -30,18 +45,26 @@ const roleColors: Record<string, string> = {
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [managers, setManagers] = useState<Manager[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sendingPasswordFor, setSendingPasswordFor] = useState<string | null>(null);
+  const [editingManager, setEditingManager] = useState<Record<string, string>>({});
+  const [assigningManagerFor, setAssigningManagerFor] = useState<string | null>(null);
+  const [selectedRole, setSelectedRole] = useState<string>('');
 
   useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
-        const response = await axiosInstance.get('/admin/users');
-        setUsers(response.data.users);
+        const [usersResponse, managersResponse] = await Promise.all([
+          axiosInstance.get('/admin/users'),
+          axiosInstance.get('/admin/managers'),
+        ]);
+        setUsers(usersResponse.data.users);
+        setManagers(managersResponse.data.managers);
       } catch (error) {
-        console.error('Error fetching users:', error);
-        let errorMessage = 'Failed to fetch users';
+        console.error('Error fetching data:', error);
+        let errorMessage = 'Failed to fetch data';
         if (error instanceof AxiosError && error.response?.data?.msg) {
           errorMessage = error.response.data.msg as string;
         }
@@ -51,7 +74,7 @@ export default function UsersPage() {
       }
     };
 
-    fetchUsers();
+    fetchData();
   }, []);
 
   const handleSendPassword = async (userId: string, userEmail: string) => {
@@ -68,6 +91,52 @@ export default function UsersPage() {
       toast.error(errorMessage);
     } finally {
       setSendingPasswordFor(null);
+    }
+  };
+
+  const handleAssignManager = async (userId: string) => {
+    const managerId = editingManager[userId];
+    if (!managerId) {
+      toast.error('Please select a manager');
+      return;
+    }
+
+    setAssigningManagerFor(userId);
+    try {
+      await axiosInstance.post('/admin/assign-manager', {
+        userId,
+        managerId,
+      });
+      
+      // Update the user in the list
+      setUsers(users.map(user => 
+        user.id === userId 
+          ? { 
+              ...user, 
+              manager: managers.find(m => m.id === managerId) 
+                ? { id: managerId, name: managers.find(m => m.id === managerId)!.name }
+                : null 
+            }
+          : user
+      ));
+      
+      // Clear the editing state
+      setEditingManager(prev => {
+        const newState = { ...prev };
+        delete newState[userId];
+        return newState;
+      });
+      
+      toast.success('Manager assigned successfully');
+    } catch (error) {
+      console.error('Error assigning manager:', error);
+      let errorMessage = 'Failed to assign manager';
+      if (error instanceof AxiosError && error.response?.data?.msg) {
+        errorMessage = error.response.data.msg as string;
+      }
+      toast.error(errorMessage);
+    } finally {
+      setAssigningManagerFor(null);
     }
   };
 
@@ -108,12 +177,14 @@ export default function UsersPage() {
               className="bg-transparent text-sm text-slate-600 placeholder-slate-400 outline-none w-full"
             />
           </div>
-          <select className="text-sm border border-slate-200 rounded-xl px-4 py-2 bg-white text-slate-600 outline-none cursor-pointer hover:border-slate-300 transition-colors">
+          <select 
+            value={selectedRole} 
+            onChange={(e) => setSelectedRole(e.target.value)}
+            className="text-sm border border-slate-200 rounded-xl px-4 py-2 bg-white text-slate-600 outline-none cursor-pointer hover:border-slate-300 transition-colors"
+          >
             <option value="">All Roles</option>
             <option value="MANAGER">Manager</option>
             <option value="EMPLOYEE">Employee</option>
-            <option value="FINANCE">Finance</option>
-            <option value="DIRECTOR">Director</option>
           </select>
         </div>
 
@@ -129,14 +200,14 @@ export default function UsersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {users.length === 0 ? (
+              {users.filter(user => !selectedRole || user.role === selectedRole).length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
                     No users found
                   </td>
                 </tr>
               ) : (
-                users.map((user) => (
+                users.filter(user => !selectedRole || user.role === selectedRole).map((user) => (
                   <tr key={user.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 text-sm font-semibold text-slate-800">{user.name}</td>
                     <td className="px-6 py-4 text-sm text-slate-600">{user.email}</td>
@@ -145,7 +216,34 @@ export default function UsersPage() {
                         {user.role}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{user.manager?.name || '-'}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <Select 
+                          value={editingManager[user.id] || ''} 
+                          onValueChange={(value) => setEditingManager(prev => ({ ...prev, [user.id]: value }))}
+                        >
+                          <SelectTrigger className="w-48">
+                            <SelectValue placeholder={user.manager?.name || 'Select manager'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {managers.filter(manager => manager.id !== user.id).map((manager) => (
+                              <SelectItem key={manager.id} value={manager.id}>
+                                {manager.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {editingManager[user.id] && (
+                          <button
+                            onClick={() => handleAssignManager(user.id)}
+                            disabled={assigningManagerFor === user.id}
+                            className="bg-green-50 hover:bg-green-100 text-green-700 font-semibold text-xs px-2 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                          >
+                            {assigningManagerFor === user.id ? 'Assigning...' : 'Assign'}
+                          </button>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-6 py-4">
                       <button
                         onClick={() => handleSendPassword(user.id, user.email)}
