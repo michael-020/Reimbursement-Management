@@ -18,6 +18,7 @@ const signupSchema = z
     email: z.email('Invalid email address'),
     password: z.string().min(8, 'Password must be at least 8 characters'),
     confirmPassword: z.string(),
+    company: z.string().min(1, 'Company name is required'),
     country: z.string().min(1, 'Country is required'),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -166,6 +167,25 @@ export default function SignupPage() {
             />
             {errors.confirmPassword && (
               <p className="text-red-600 text-sm mt-1">{errors.confirmPassword.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="company"
+              className="block text-sm font-medium text-neutral-700 mb-2"
+            >
+              Company Name
+            </label>
+            <input
+              {...register('company')}
+              id="company"
+              type="text"
+              placeholder="Your company name"
+              className="w-full px-4 py-2.5 bg-white border border-neutral-300 rounded-lg text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-400 focus:ring-2 focus:ring-neutral-100 transition"
+            />
+            {errors.company && (
+              <p className="text-red-600 text-sm mt-1">{errors.company.message}</p>
             )}
           </div>
 
